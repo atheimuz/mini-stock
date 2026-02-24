@@ -1,0 +1,21 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Xcode
+*.xcodeproj
+*.xcworkspace
+DerivedData/
+
+# Claude (rules만 예외로 추적)
+.claude/*
+!.claude/rules/
+
+# Conductor
+.context/
+
+# Specs
+specs/
+
+# macOS
+.DS_Store
