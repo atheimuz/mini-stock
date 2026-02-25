@@ -4,6 +4,8 @@ struct SettingsPanelView: View {
     @Bindable var store: StockStore
     @State private var appKey = ""
     @State private var appSecret = ""
+    @State private var showAppKey = false
+    @State private var showAppSecret = false
     @State private var testResult: TestResult?
     @State private var isTesting = false
     private func close() { store.showSettings = false }
@@ -37,26 +39,14 @@ struct SettingsPanelView: View {
                     Text("App Key")
                         .font(.hint)
                         .foregroundStyle(Color.textSecondary)
-                    SecureField("36-character key", text: $appKey)
-                        .textFieldStyle(.plain)
-                        .font(.popoverLabel)
-                        .foregroundStyle(Color.textPrimary)
-                        .padding(6)
-                        .background(Color.tileFlatBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    secretField("36-character key", text: $appKey, isRevealed: $showAppKey)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("App Secret")
                         .font(.hint)
                         .foregroundStyle(Color.textSecondary)
-                    SecureField("180-character secret", text: $appSecret)
-                        .textFieldStyle(.plain)
-                        .font(.popoverLabel)
-                        .foregroundStyle(Color.textPrimary)
-                        .padding(6)
-                        .background(Color.tileFlatBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    secretField("180-character secret", text: $appSecret, isRevealed: $showAppSecret)
                 }
             }
 
@@ -221,6 +211,36 @@ struct SettingsPanelView: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    private func secretField(_ placeholder: String, text: Binding<String>, isRevealed: Binding<Bool>) -> some View {
+        ZStack(alignment: .leading) {
+            if text.wrappedValue.isEmpty {
+                Text(placeholder)
+                    .font(.popoverLabel)
+                    .foregroundStyle(Color.textSecondary)
+                    .padding(.leading, 2)
+            }
+            HStack(spacing: 4) {
+                if isRevealed.wrappedValue {
+                    TextField("", text: text)
+                } else {
+                    SecureField("", text: text)
+                }
+                Button { isRevealed.wrappedValue.toggle() } label: {
+                    Image(systemName: isRevealed.wrappedValue ? "eye.slash" : "eye")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.textSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .textFieldStyle(.plain)
+        .font(.popoverLabel)
+        .foregroundStyle(Color.textPrimary)
+        .padding(6)
+        .background(Color.tileFlatBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     private func testConnection() {
