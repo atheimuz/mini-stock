@@ -43,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.isOpaque = false
         panel.hasShadow = true
         panel.acceptsMouseMovedEvents = true
+        panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.managed]
         panel.minSize = NSSize(width: 160, height: 200)
         let hostingView = FirstMouseHostingView(rootView: contentView)
@@ -60,7 +61,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel.center()
         }
 
-        panel.orderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
 
         let saveFrame = { [weak self] in
             guard let frame = self?.panel.frame else { return }
@@ -82,14 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             queue: .main
         ) { _ in saveFrame() }
 
-        // 스페이스 전환 후 돌아올 때 위젯이 맨 뒤로 가지 않도록
-        NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.activeSpaceDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.panel.orderFront(nil)
-        }
+
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
