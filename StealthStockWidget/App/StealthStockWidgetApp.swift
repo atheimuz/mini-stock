@@ -1,12 +1,14 @@
-import SwiftUI
+import AppKit
 
 @main
-struct StealthStockWidgetApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-
-    var body: some Scene {
-        Settings {
-            EmptyView()
+enum StealthStockWidgetApp {
+    static func main() {
+        let app = NSApplication.shared
+        let delegate = AppDelegate()
+        app.delegate = delegate
+        app.setActivationPolicy(.regular)
+        withExtendedLifetime(delegate) {
+            app.run()
         }
     }
 }
