@@ -4,17 +4,59 @@ import SwiftUI
 private class StockPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
+
+    private weak var firstMouseTarget: NSView?
+
+    override func sendEvent(_ event: NSEvent) {
+        // acceptsFirstMouse=true인 뷰(X버튼)는 항상 직접 dispatch.
+        // macOS가 sendEvent 호출 전에 window를 key로 만들기 때문에
+        // isKeyWindow 체크 없이 항상 처리해야 첫 클릭이 작동함.
+        if event.type == .leftMouseDown {
+            if let contentView = contentView, let superview = contentView.superview {
+                let pt = superview.convert(event.locationInWindow, from: nil)
+                if let hitView = contentView.hitTest(pt) as? AcceptFirstMouseButton.ClickableNSView {
+                    firstMouseTarget = hitView
+                    hitView.mouseDown(with: event)
+                    return
+                }
+            }
+        }
+
+        if event.type == .leftMouseUp, let target = firstMouseTarget {
+            firstMouseTarget = nil
+            target.mouseUp(with: event)
+            return
+        }
+
+        super.sendEvent(event)
+    }
 }
 
 private class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
-    override func mouseDown(with event: NSEvent) {
-        if !NSApp.isActive {
-            NSApp.activate(ignoringOtherApps: true)
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        // NSHostingView는 hitTest를 오버라이드하여 SwiftUI 내부로 이벤트를 라우팅함.
+        // acceptsFirstMouse=true인 ClickableNSView를 직접 반환하여 이 라우팅을 우회.
+        let localPoint = convert(point, from: superview)
+        if let firstMouseView = findFirstMouseView(in: self, at: localPoint) {
+            return firstMouseView
         }
-        window?.makeKey()
-        super.mouseDown(with: event)
+        return super.hitTest(point)
+    }
+
+    private func findFirstMouseView(in parent: NSView, at point: NSPoint) -> NSView? {
+        for subview in parent.subviews.reversed() {
+            let localPoint = parent.convert(point, to: subview)
+            guard !subview.isHidden, subview.bounds.contains(localPoint) else { continue }
+            if let found = findFirstMouseView(in: subview, at: localPoint) {
+                return found
+            }
+            if subview !== self, subview.acceptsFirstMouse(for: nil) {
+                return subview
+            }
+        }
+        return nil
     }
 }
 
@@ -83,7 +125,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             object: panel,
             queue: .main
         ) { _ in saveFrame() }
-
 
     }
 

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct StockTileView: View {
@@ -28,20 +29,22 @@ struct StockTileView: View {
                 .font(.tileLabel)
                 .foregroundStyle(tileTextColor)
 
-            if isHovering {
-                Button(action: onRemove) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 5, weight: .bold))
-                        .foregroundStyle(Color.textSecondary)
-                        .frame(width: 10, height: 10)
-                        .background(Color.widgetBackground.opacity(0.8))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .padding(1)
-                .transition(.opacity)
+            ZStack {
+                AcceptFirstMouseButton(action: onRemove)
+
+                Image(systemName: "xmark")
+                    .font(.system(size: 5, weight: .bold))
+                    .foregroundStyle(Color.textSecondary)
+                    .frame(width: 10, height: 10)
+                    .background(Color.widgetBackground.opacity(0.8))
+                    .clipShape(Circle())
+                    .allowsHitTesting(false)
             }
+            .frame(width: 10, height: 10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .padding(1)
+            .opacity(isHovering ? 1 : 0)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: isHovering)
         }
         .frame(width: 28, height: 28)
         .popover(isPresented: $showPopover, arrowEdge: .bottom) {
@@ -105,6 +108,39 @@ struct StockTileView: View {
         case .rise: return "up"
         case .fall: return "down"
         case .flat: return "flat"
+        }
+    }
+}
+
+// MARK: - AcceptFirstMouseButton
+
+/// SwiftUI Button 대신 AppKit 레벨에서 클릭을 처리하는 NSViewRepresentable.
+/// key window 여부와 무관하게 acceptsFirstMouse로 첫 번째 클릭을 직접 수신한다.
+struct AcceptFirstMouseButton: NSViewRepresentable {
+    let action: () -> Void
+
+    func makeNSView(context: Context) -> ClickableNSView {
+        let view = ClickableNSView()
+        view.action = action
+        return view
+    }
+
+    func updateNSView(_ nsView: ClickableNSView, context: Context) {
+        nsView.action = action
+    }
+
+    class ClickableNSView: NSView {
+        var action: (() -> Void)?
+
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseDown(with event: NSEvent) {
+            // super 미호출 — FirstMouseHostingView로 전파 방지
+        }
+
+        override func mouseUp(with event: NSEvent) {
+            let pt = convert(event.locationInWindow, from: nil)
+            if bounds.contains(pt) { action?() }
         }
     }
 }
