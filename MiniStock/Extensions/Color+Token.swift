@@ -34,6 +34,9 @@ extension Color {
     static let indicatorActive = Color(hex: 0xE8843A)
     static let indicatorError = Color(hex: 0xFF453A)
 
+    // MARK: - Segment
+    static let segmentActiveBackground = Color(hex: 0x3A3A3C)
+
     // MARK: - Hex Initializer
     init(hex: UInt, opacity: Double = 1.0) {
         self.init(
