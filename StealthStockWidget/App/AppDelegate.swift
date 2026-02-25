@@ -29,7 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         panel = StockPanel(
             contentRect: NSRect(x: 0, y: 0, width: 232, height: 300),
-            styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -44,28 +44,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.hasShadow = true
         panel.acceptsMouseMovedEvents = true
         panel.collectionBehavior = [.managed]
+        panel.minSize = NSSize(width: 160, height: 200)
         let hostingView = FirstMouseHostingView(rootView: contentView)
         panel.contentView = hostingView
 
-        // Restore position or center
-        if let x = UserDefaults.standard.object(forKey: "window_x") as? CGFloat,
-           let y = UserDefaults.standard.object(forKey: "window_y") as? CGFloat {
-            panel.setFrameOrigin(NSPoint(x: x, y: y))
+        // Restore position and size, or center
+        let defaults = UserDefaults.standard
+        let w = defaults.object(forKey: "window_w") as? CGFloat ?? 232
+        let h = defaults.object(forKey: "window_h") as? CGFloat ?? 300
+        if let x = defaults.object(forKey: "window_x") as? CGFloat,
+           let y = defaults.object(forKey: "window_y") as? CGFloat {
+            panel.setFrame(NSRect(x: x, y: y, width: w, height: h), display: true)
         } else {
+            panel.setContentSize(NSSize(width: w, height: h))
             panel.center()
         }
 
         panel.orderFront(nil)
 
+        let saveFrame = { [weak self] in
+            guard let frame = self?.panel.frame else { return }
+            UserDefaults.standard.set(frame.origin.x, forKey: "window_x")
+            UserDefaults.standard.set(frame.origin.y, forKey: "window_y")
+            UserDefaults.standard.set(frame.size.width, forKey: "window_w")
+            UserDefaults.standard.set(frame.size.height, forKey: "window_h")
+        }
+
         NotificationCenter.default.addObserver(
             forName: NSWindow.didMoveNotification,
             object: panel,
             queue: .main
-        ) { [weak self] _ in
-            guard let origin = self?.panel.frame.origin else { return }
-            UserDefaults.standard.set(origin.x, forKey: "window_x")
-            UserDefaults.standard.set(origin.y, forKey: "window_y")
-        }
+        ) { _ in saveFrame() }
+
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didResizeNotification,
+            object: panel,
+            queue: .main
+        ) { _ in saveFrame() }
 
         // 스페이스 전환 후 돌아올 때 위젯이 맨 뒤로 가지 않도록
         NSWorkspace.shared.notificationCenter.addObserver(
