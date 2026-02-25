@@ -248,13 +248,17 @@ struct SettingsPanelView: View {
         testResult = nil
         Task {
             do {
+                let oldKey = KeychainService.load(key: .appKey)
+                let oldSecret = KeychainService.load(key: .appSecret)
                 try KeychainService.save(key: .appKey, value: appKey)
                 try KeychainService.save(key: .appSecret, value: appSecret)
-                await KISAuthService.shared.invalidateToken()
+                if appKey != oldKey || appSecret != oldSecret {
+                    await KISAuthService.shared.invalidateToken()
+                }
                 _ = try await KISAuthService.shared.getToken()
                 testResult = .success
             } catch {
-                testResult = .failure("Failed")
+                testResult = .failure(error.localizedDescription)
             }
             isTesting = false
         }
