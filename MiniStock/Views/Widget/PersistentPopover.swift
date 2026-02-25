@@ -2,8 +2,7 @@ import AppKit
 import SwiftUI
 
 /// 앱 전환 시에도 닫히지 않는 popover modifier.
-/// macOS 기본 `.popover`는 transient 동작으로 포커스를 잃으면 자동 닫힘.
-/// 이 래퍼는 `NSPopover.behavior = .applicationDefined`를 사용하여 이를 방지.
+/// NSPopover 대신 borderless NSPanel을 사용하여 시스템 크롬(보더) 없이 표시.
 struct PersistentPopover<PopoverContent: View>: ViewModifier {
     @Binding var isPresented: Bool
     let arrowEdge: NSRectEdge
@@ -48,12 +47,12 @@ private struct PersistentPopoverRepresentable<PopoverContent: View>: NSViewRepre
         Coordinator(isPresented: $isPresented)
     }
 
-    class Coordinator: NSObject, NSPopoverDelegate {
+    class Coordinator: NSObject {
         weak var anchorView: NSView?
         var arrowEdge: NSRectEdge = .minY
         var contentBuilder: (() -> PopoverContent)?
-        private var popover: NSPopover?
-        private var isClosing = false
+        private var panel: NSPanel?
+        private var monitor: Any?
         @Binding var isPresented: Bool
 
         init(isPresented: Binding<Bool>) {
@@ -61,36 +60,114 @@ private struct PersistentPopoverRepresentable<PopoverContent: View>: NSViewRepre
         }
 
         func showIfNeeded() {
-            guard popover == nil, !isClosing,
-                  let anchor = anchorView, anchor.window != nil,
+            guard panel == nil,
+                  let anchor = anchorView, let parentWindow = anchor.window,
                   let content = contentBuilder else { return }
 
-            let p = NSPopover()
-            p.behavior = .applicationDefined
-            p.contentViewController = NSHostingController(rootView: content())
-            p.delegate = self
-            popover = p
+            let hostingView = NSHostingView(rootView: content())
+            let fittingSize = hostingView.fittingSize
 
-            DispatchQueue.main.async { [weak self] in
-                guard let self, let anchor = self.anchorView, anchor.window != nil else { return }
-                p.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: self.arrowEdge)
+            let p = NSPanel(
+                contentRect: NSRect(origin: .zero, size: fittingSize),
+                styleMask: [.borderless, .nonactivatingPanel],
+                backing: .buffered,
+                defer: true
+            )
+            p.isOpaque = false
+            p.backgroundColor = .clear
+            p.hasShadow = true
+            p.level = .popUpMenu
+            p.isMovable = false
+
+            let container = NSView(frame: NSRect(origin: .zero, size: fittingSize))
+            container.wantsLayer = true
+            container.layer?.backgroundColor = NSColor(Color.widgetBackground).cgColor
+            container.layer?.cornerRadius = 8
+            container.layer?.masksToBounds = true
+
+            hostingView.frame = container.bounds
+            hostingView.autoresizingMask = [.width, .height]
+            container.addSubview(hostingView)
+
+            p.contentView = container
+            panel = p
+
+            let anchorRect = anchor.convert(anchor.bounds, to: nil)
+            let screenRect = parentWindow.convertToScreen(anchorRect)
+
+            let origin: NSPoint
+            switch arrowEdge {
+            case .minY:
+                origin = NSPoint(
+                    x: screenRect.midX - fittingSize.width / 2,
+                    y: screenRect.minY - fittingSize.height - 4
+                )
+            case .maxY:
+                origin = NSPoint(
+                    x: screenRect.midX - fittingSize.width / 2,
+                    y: screenRect.maxY + 4
+                )
+            case .minX:
+                origin = NSPoint(
+                    x: screenRect.minX - fittingSize.width - 4,
+                    y: screenRect.midY - fittingSize.height / 2
+                )
+            case .maxX:
+                origin = NSPoint(
+                    x: screenRect.maxX + 4,
+                    y: screenRect.midY - fittingSize.height / 2
+                )
+            default:
+                origin = NSPoint(
+                    x: screenRect.midX - fittingSize.width / 2,
+                    y: screenRect.minY - fittingSize.height - 4
+                )
+            }
+
+            p.setFrameOrigin(origin)
+            parentWindow.addChildWindow(p, ordered: .above)
+
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+                guard let self, let panel = self.panel else { return event }
+                let loc = event.locationInWindow
+                if event.window == panel {
+                    return event
+                }
+                // 패널 좌표로 변환하여 클릭이 패널 밖인지 확인
+                let panelLoc = panel.convertPoint(fromScreen: NSEvent.mouseLocation)
+                if !panel.contentView!.bounds.contains(panelLoc) {
+                    self.close()
+                }
+                return event
             }
         }
 
         func closeIfNeeded() {
-            guard let p = popover, p.isShown else {
-                popover = nil
-                return
-            }
-            isClosing = true
-            p.performClose(nil)
+            close()
         }
 
-        func popoverDidClose(_ notification: Notification) {
-            popover = nil
-            isClosing = false
+        private func close() {
+            if let m = monitor {
+                NSEvent.removeMonitor(m)
+                monitor = nil
+            }
+            if let p = panel {
+                p.parent?.removeChildWindow(p)
+                p.orderOut(nil)
+                panel = nil
+            }
             if isPresented {
                 isPresented = false
+            }
+        }
+
+        deinit {
+            if let m = monitor {
+                NSEvent.removeMonitor(m)
+            }
+            if let p = panel {
+                p.parent?.removeChildWindow(p)
+                p.orderOut(nil)
             }
         }
     }
