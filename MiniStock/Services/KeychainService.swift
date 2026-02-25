@@ -23,6 +23,11 @@ enum KeychainService {
     static var hasCredentials: Bool {
         load(key: .appKey) != nil && load(key: .appSecret) != nil
     }
+
+    static var hasAccountNumber: Bool {
+        guard let account = load(key: .accountNumber) else { return false }
+        return !account.isEmpty
+    }
 }
 
 enum KeychainError: LocalizedError {
