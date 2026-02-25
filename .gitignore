@@ -17,5 +17,9 @@ DerivedData/
 # Specs
 specs/
 
+# Release artifacts
+release/
+*.dmg
+
 # macOS
 .DS_Store
