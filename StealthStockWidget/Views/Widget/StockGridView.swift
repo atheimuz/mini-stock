@@ -3,7 +3,7 @@ import SwiftUI
 struct StockGridView: View {
     @Bindable var store: StockStore
 
-    private let columns = Array(repeating: GridItem(.fixed(28), spacing: 4), count: 4)
+    private let columns = [GridItem(.adaptive(minimum: 28), spacing: 4)]
 
     var body: some View {
         VStack(spacing: 4) {
