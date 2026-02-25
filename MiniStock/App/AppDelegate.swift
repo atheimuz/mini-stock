@@ -82,7 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
         panel.isMovableByWindowBackground = false
-        panel.backgroundColor = NSColor(Color.widgetBackground)
+        panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true
         panel.acceptsMouseMovedEvents = true

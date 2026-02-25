@@ -1,6 +1,11 @@
 import Foundation
 import SwiftUI
 
+enum AppTab {
+    case stocks
+    case balance
+}
+
 @Observable
 final class StockStore {
     // MARK: - State
@@ -12,8 +17,26 @@ final class StockStore {
     var showSearch = false
     var showSettings = false
 
+    // MARK: - Tab
+    var activeTab: AppTab = .stocks
+
+    // MARK: - Balance State
+    var balanceHoldings: [BalanceHolding] = []
+    var balanceSummary: BalanceSummary?
+    var isBalanceRefreshing = false
+    var balanceHasError = false
+    var balanceLastRefreshTime: Date?
+
     // MARK: - Undo
     var undoItem: UndoItem?
+
+    // MARK: - Credential State
+    var hasAccountNumber: Bool = KeychainService.hasAccountNumber
+
+    // MARK: - Appearance
+    var widgetOpacity: Double = UserDefaults.standard.object(forKey: "widget_opacity") as? Double ?? 1.0 {
+        didSet { UserDefaults.standard.set(widgetOpacity, forKey: Keys.widgetOpacity) }
+    }
 
     // MARK: - Onboarding
     var hasShownHoverHint: Bool {
@@ -29,6 +52,7 @@ final class StockStore {
     private enum Keys {
         static let watchedStocks = "watched_stocks"
         static let hoverHintShown = "hover_hint_shown"
+        static let widgetOpacity = "widget_opacity"
     }
 
     static let maxStocks = 20
@@ -148,13 +172,60 @@ final class StockStore {
         }
     }
 
+    // MARK: - Balance
+
+    func refreshBalance() async {
+        guard KeychainService.hasCredentials, KeychainService.hasAccountNumber else { return }
+        isBalanceRefreshing = true
+        balanceHasError = false
+
+        do {
+            let result = try await KISBalanceService.shared.fetchBalance()
+            balanceHoldings = result.holdings
+            balanceSummary = result.summary
+            balanceLastRefreshTime = Date()
+        } catch {
+            if balanceHoldings.isEmpty {
+                balanceHasError = true
+            } else {
+                balanceHasError = true
+            }
+        }
+        isBalanceRefreshing = false
+    }
+
+    /// 설정 저장 후 호출 — 계좌번호 상태를 동기화하고 활성 탭에 맞게 갱신
+    func refreshAfterCredentialChange() async {
+        hasAccountNumber = KeychainService.hasAccountNumber
+        switch activeTab {
+        case .stocks:
+            await refreshAll()
+        case .balance:
+            await refreshBalance()
+        }
+    }
+
+    func switchTab(_ tab: AppTab) {
+        activeTab = tab
+        if tab == .balance && balanceHoldings.isEmpty && !isBalanceRefreshing {
+            Task { await refreshBalance() }
+        }
+    }
+
     // MARK: - Timer
 
     func startTimer() {
         refreshTimer?.invalidate()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: Self.refreshInterval, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task { await self.refreshAll() }
+            Task {
+                switch self.activeTab {
+                case .stocks:
+                    await self.refreshAll()
+                case .balance:
+                    await self.refreshBalance()
+                }
+            }
         }
         Task { await refreshAll() }
     }

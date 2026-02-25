@@ -4,6 +4,7 @@ struct SettingsPanelView: View {
     @Bindable var store: StockStore
     @State private var appKey = ""
     @State private var appSecret = ""
+    @State private var accountNumber = ""
     @State private var showAppKey = false
     @State private var showAppSecret = false
     @State private var testResult: TestResult?
@@ -48,6 +49,39 @@ struct SettingsPanelView: View {
                         .foregroundStyle(Color.textSecondary)
                     secretField("180-character secret", text: $appSecret, isRevealed: $showAppSecret)
                 }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("계좌번호")
+                        .font(.hint)
+                        .foregroundStyle(Color.textSecondary)
+                    ZStack(alignment: .leading) {
+                        if accountNumber.isEmpty {
+                            Text("12345678 (8자리)")
+                                .font(.popoverLabel)
+                                .foregroundStyle(Color.textSecondary)
+                                .padding(.leading, 2)
+                        }
+                        TextField("", text: $accountNumber)
+                            .textFieldStyle(.plain)
+                            .font(.popoverLabel)
+                            .foregroundStyle(Color.textPrimary)
+                            .onChange(of: accountNumber) { _, newValue in
+                                let filtered = newValue.filter(\.isNumber)
+                                if filtered != newValue || filtered.count > 8 {
+                                    accountNumber = String(filtered.prefix(8))
+                                }
+                            }
+                    }
+                    .padding(6)
+                    .background(Color.tileFlatBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                    if !accountNumber.isEmpty && accountNumber.count < 8 {
+                        Text("8자리를 입력해주세요")
+                            .font(.hint)
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                }
             }
 
             HStack(spacing: 8) {
@@ -81,18 +115,9 @@ struct SettingsPanelView: View {
                             .foregroundStyle(Color.indicatorError)
                     }
                 }
-            }
 
-            Divider()
-                .background(Color.widgetBorder)
-
-            updateSection
-
-            Divider()
-                .background(Color.widgetBorder)
-
-            HStack {
                 Spacer()
+
                 Button("Save") { saveCredentials() }
                     .font(.buttonFont)
                     .foregroundStyle(Color.widgetBackground)
@@ -103,6 +128,11 @@ struct SettingsPanelView: View {
                     .buttonStyle(.plain)
                     .disabled(appKey.isEmpty || appSecret.isEmpty)
             }
+
+            Divider()
+                .background(Color.widgetBorder)
+
+            updateSection
 
             Link("How to get API keys",
                  destination: URL(string: "https://apiportal.koreainvestment.com/apiservice")!)
@@ -115,6 +145,7 @@ struct SettingsPanelView: View {
         .onAppear {
             appKey = KeychainService.load(key: .appKey) ?? ""
             appSecret = KeychainService.load(key: .appSecret) ?? ""
+            accountNumber = KeychainService.load(key: .accountNumber) ?? ""
         }
     }
 
@@ -268,7 +299,12 @@ struct SettingsPanelView: View {
         do {
             try KeychainService.save(key: .appKey, value: appKey)
             try KeychainService.save(key: .appSecret, value: appSecret)
-            Task { await store.refreshAll() }
+            if !accountNumber.isEmpty {
+                try KeychainService.save(key: .accountNumber, value: accountNumber)
+            } else {
+                KeychainService.delete(key: .accountNumber)
+            }
+            Task { await store.refreshAfterCredentialChange() }
             close()
         } catch {
             testResult = .failure("Save failed")
