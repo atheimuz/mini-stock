@@ -6,7 +6,7 @@ struct SettingsPanelView: View {
     @State private var appSecret = ""
     @State private var testResult: TestResult?
     @State private var isTesting = false
-    @Environment(\.dismiss) private var dismiss
+    private func close() { store.showSettings = false }
 
     enum TestResult {
         case success
@@ -20,7 +20,7 @@ struct SettingsPanelView: View {
                     .font(.popoverName)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
-                Button(action: { dismiss() }) {
+                Button(action: { close() }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 12))
                         .foregroundStyle(Color.textSecondary)
@@ -245,7 +245,7 @@ struct SettingsPanelView: View {
             try KeychainService.save(key: .appKey, value: appKey)
             try KeychainService.save(key: .appSecret, value: appSecret)
             Task { await store.refreshAll() }
-            dismiss()
+            close()
         } catch {
             testResult = .failure("Save failed")
         }

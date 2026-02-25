@@ -36,7 +36,7 @@ struct HeaderView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Settings")
-                    .popover(isPresented: $store.showSettings, arrowEdge: .top) {
+                    .persistentPopover(isPresented: $store.showSettings, arrowEdge: .minY) {
                         SettingsPanelView(store: store)
                     }
 
