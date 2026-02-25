@@ -1,4 +1,4 @@
-# StealthStockWidget
+# MiniStock
 
 macOS 데스크탑에 상주하는 초소형 주식 위젯.
 한국투자증권(KIS) Open API를 통해 국내 주식 시세를 실시간으로 모니터링합니다.
@@ -31,9 +31,9 @@ macOS 데스크탑에 상주하는 초소형 주식 위젯.
 ## 프로젝트 구조
 
 ```
-StealthStockWidget/
+MiniStock/
 ├── App/
-│   ├── StealthStockWidgetApp.swift   # @main 진입점
+│   ├── MiniStockApp.swift   # @main 진입점
 │   └── AppDelegate.swift             # NSPanel 윈도우 설정
 ├── Models/
 │   └── Stock.swift                   # StockInfo, StockQuote, WatchedStock
@@ -65,7 +65,7 @@ StealthStockWidget/
 
 이 앱은 Apple 공증을 받지 않았으므로 macOS가 첫 실행을 차단합니다.
 
-1. DMG를 열고 `StealthStockWidget.app`을 `Applications`로 드래그
+1. DMG를 열고 `MiniStock.app`을 `Applications`로 드래그
 2. Applications에서 앱을 **우클릭(Control-클릭)** > **열기**
 3. 대화상자에서 **열기** 클릭
 
@@ -73,7 +73,7 @@ StealthStockWidget/
 
 또는 터미널에서:
 ```bash
-xattr -dr com.apple.quarantine /Applications/StealthStockWidget.app
+xattr -dr com.apple.quarantine /Applications/MiniStock.app
 ```
 
 ## 설정

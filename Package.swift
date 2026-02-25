@@ -3,14 +3,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "StealthStockWidget",
+    name: "MiniStock",
     platforms: [
         .macOS(.v14)
     ],
     targets: [
         .executableTarget(
-            name: "StealthStockWidget",
-            path: "StealthStockWidget",
+            name: "MiniStock",
+            path: "MiniStock",
             resources: [
                 .process("Resources")
             ]

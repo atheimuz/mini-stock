@@ -135,7 +135,7 @@ final class AppUpdateService: NSObject {
 
     private func installFromDMG(at dmgPath: URL) async throws {
         let mountPoint = FileManager.default.temporaryDirectory
-            .appendingPathComponent("StealthStockWidgetUpdate").path
+            .appendingPathComponent("MiniStockUpdate").path
 
         // Clean up any previous mount
         try? await runProcess("/usr/bin/hdiutil", arguments: ["detach", mountPoint, "-force"])
@@ -232,7 +232,7 @@ extension AppUpdateService: URLSessionDownloadDelegate {
         didFinishDownloadingTo location: URL
     ) {
         let dest = FileManager.default.temporaryDirectory
-            .appendingPathComponent("StealthStockWidget-update.dmg")
+            .appendingPathComponent("MiniStock-update.dmg")
         try? FileManager.default.removeItem(at: dest)
 
         do {

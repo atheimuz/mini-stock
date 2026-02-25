@@ -1,7 +1,7 @@
 import AppKit
 
 @main
-enum StealthStockWidgetApp {
+enum MiniStockApp {
     static func main() {
         let app = NSApplication.shared
         let delegate = AppDelegate()

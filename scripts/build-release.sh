@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # ---- Configuration ----
-APP_NAME="StealthStockWidget"
-BUNDLE_ID="com.atheimuz.StealthStockWidget"
+APP_NAME="MiniStock"
+BUNDLE_ID="com.atheimuz.MiniStock"
 VERSION="${1:-1.0.0}"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="${PROJECT_DIR}/.build"

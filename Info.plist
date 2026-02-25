@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.atheimuz.StealthStockWidget</string>
+    <string>com.atheimuz.MiniStock</string>
 
     <key>CFBundleName</key>
-    <string>StealthStockWidget</string>
+    <string>MiniStock</string>
 
     <key>CFBundleDisplayName</key>
-    <string>StealthStockWidget</string>
+    <string>MiniStock</string>
 
     <key>CFBundleVersion</key>
     <string>1</string>
@@ -18,7 +18,7 @@
     <string>1.0.0</string>
 
     <key>CFBundleExecutable</key>
-    <string>StealthStockWidget</string>
+    <string>MiniStock</string>
 
     <key>CFBundlePackageType</key>
     <string>APPL</string>
