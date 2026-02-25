@@ -26,7 +26,7 @@ struct BalanceHolding: Identifiable {
         let rawName = (output["prdt_name"] as? String ?? "").trimmingCharacters(in: .whitespaces)
         let name = rawName.isEmpty ? code : rawName
 
-        let avgPrice = Int(output["pchs_avg_pric"] as? String ?? "0") ?? 0
+        let avgPrice = Int(Double(output["pchs_avg_pric"] as? String ?? "0") ?? 0)
         let purchaseAmount = Int(output["pchs_amt"] as? String ?? "0") ?? 0
         let currentPrice = Int(output["prpr"] as? String ?? "0") ?? 0
         let evalAmount = Int(output["evlu_amt"] as? String ?? "0") ?? 0
