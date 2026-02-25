@@ -36,6 +36,7 @@ struct TilePopoverView: View {
         }
         .padding(12)
         .background(Color.widgetBackground)
+        .presentationBackground(Color.widgetBackground)
     }
 
     private func formattedPrice(_ price: Int) -> String {

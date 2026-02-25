@@ -82,6 +82,11 @@ struct SettingsPanelView: View {
                             .foregroundStyle(Color.textSecondary)
                     }
                 }
+
+                Link("How to get API keys",
+                     destination: URL(string: "https://apiportal.koreainvestment.com/apiservice")!)
+                    .font(.hint)
+                    .foregroundStyle(Color.tileRiseText)
             }
 
             HStack(spacing: 8) {
@@ -103,19 +108,6 @@ struct SettingsPanelView: View {
                 .buttonStyle(.plain)
                 .disabled(appKey.isEmpty || appSecret.isEmpty || isTesting)
 
-                if let result = testResult {
-                    switch result {
-                    case .success:
-                        Label("Connected", systemImage: "checkmark.circle.fill")
-                            .font(.hint)
-                            .foregroundStyle(Color.accentFall)
-                    case .failure(let msg):
-                        Label(msg, systemImage: "xmark.circle.fill")
-                            .font(.hint)
-                            .foregroundStyle(Color.indicatorError)
-                    }
-                }
-
                 Spacer()
 
                 Button("Save") { saveCredentials() }
@@ -129,19 +121,29 @@ struct SettingsPanelView: View {
                     .disabled(appKey.isEmpty || appSecret.isEmpty)
             }
 
+            if let result = testResult {
+                switch result {
+                case .success:
+                    Label("Connected", systemImage: "checkmark.circle.fill")
+                        .font(.hint)
+                        .foregroundStyle(Color.accentFall)
+                case .failure(let msg):
+                    Label(msg, systemImage: "xmark.circle.fill")
+                        .font(.hint)
+                        .foregroundStyle(Color.indicatorError)
+                }
+            }
+
             Divider()
                 .background(Color.widgetBorder)
 
             updateSection
 
-            Link("How to get API keys",
-                 destination: URL(string: "https://apiportal.koreainvestment.com/apiservice")!)
-                .font(.hint)
-                .foregroundStyle(Color.tileRiseText)
         }
         .padding()
         .frame(width: 300)
         .background(Color.widgetBackground)
+        .presentationBackground(Color.widgetBackground)
         .onAppear {
             appKey = KeychainService.load(key: .appKey) ?? ""
             appSecret = KeychainService.load(key: .appSecret) ?? ""
