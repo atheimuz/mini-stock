@@ -41,7 +41,7 @@ final class StockStore {
 
     // MARK: - Stock Management
 
-    func addStock(_ stock: StockInfo) {
+    func addStock(_ stock: StockInfo, skipRefresh: Bool = false) {
         guard watchedStocks.count < Self.maxStocks else { return }
         guard !watchedStocks.contains(where: { $0.stock.code == stock.code }) else { return }
 
@@ -54,7 +54,9 @@ final class StockStore {
             hasShownHoverHint = true
         }
 
-        Task { await refreshSingle(code: stock.code) }
+        if !skipRefresh {
+            Task { await refreshSingle(code: stock.code) }
+        }
     }
 
     func addStockByCode(_ code: String) async throws {
@@ -69,7 +71,7 @@ final class StockStore {
             info = apiInfo
         }
 
-        addStock(info)
+        addStock(info, skipRefresh: true)
         quotes[code] = quote
     }
 

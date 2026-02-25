@@ -5,7 +5,7 @@ final class KISQuoteService {
 
     private let baseURL = "https://openapi.koreainvestment.com:9443"
 
-    func fetchQuote(code: String) async throws -> StockQuote {
+    func fetchQuote(code: String, isRetry: Bool = false) async throws -> StockQuote {
         let token = try await KISAuthService.shared.getToken()
 
         guard let appKey = KeychainService.load(key: .appKey),
@@ -36,8 +36,23 @@ final class KISQuoteService {
             throw KISError.quoteFailed("HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
         }
 
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let output = json["output"] as? [String: Any],
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw KISError.invalidResponse
+        }
+
+        let rtCd = json["rt_cd"] as? String ?? ""
+        if rtCd != "0" {
+            let msg = json["msg1"] as? String ?? "Unknown error"
+            let msgCd = json["msg_cd"] as? String ?? ""
+            // 토큰 에러 시 1회 재시도
+            if msgCd.hasPrefix("EGW"), !isRetry {
+                await KISAuthService.shared.invalidateToken()
+                return try await fetchQuote(code: code, isRetry: true)
+            }
+            throw KISError.quoteFailed("\(msgCd): \(msg)")
+        }
+
+        guard let output = json["output"] as? [String: Any],
               let quote = StockQuote.from(apiResponse: output, code: code)
         else {
             throw KISError.invalidResponse
@@ -72,8 +87,18 @@ final class KISQuoteService {
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200
         else { throw KISError.quoteFailed("HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)") }
 
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let output = json["output"] as? [String: Any],
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw KISError.invalidResponse
+        }
+
+        let rtCd = json["rt_cd"] as? String ?? ""
+        if rtCd != "0" {
+            let msg = json["msg1"] as? String ?? "Unknown error"
+            let msgCd = json["msg_cd"] as? String ?? ""
+            throw KISError.quoteFailed("\(msgCd): \(msg)")
+        }
+
+        guard let output = json["output"] as? [String: Any],
               let quote = StockQuote.from(apiResponse: output, code: code)
         else { throw KISError.invalidResponse }
 
