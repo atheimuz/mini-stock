@@ -151,7 +151,10 @@ final class StockStore {
         isRefreshing = true
         hasError = false
 
-        let codes = watchedStocks.map(\.stock.code)
+        let manualCodes = watchedStocks.map(\.stock.code)
+        let manualCodeSet = Set(manualCodes)
+        let portfolioCodes = balanceHoldings.map(\.code).filter { !manualCodeSet.contains($0) }
+        let codes = manualCodes + portfolioCodes
         let newQuotes = await KISQuoteService.shared.fetchQuotes(codes: codes)
 
         if newQuotes.isEmpty && !codes.isEmpty {
@@ -227,7 +230,12 @@ final class StockStore {
                 }
             }
         }
-        Task { await refreshAll() }
+        Task {
+            if KeychainService.hasAccountNumber {
+                await refreshBalance()
+            }
+            await refreshAll()
+        }
     }
 
     func stopTimer() {
@@ -254,6 +262,27 @@ final class StockStore {
         for i in watchedStocks.indices {
             watchedStocks[i].order = i
         }
+    }
+
+    // MARK: - Display
+
+    /// 종목 탭에 표시할 전체 목록: 수동 추가 + 보유 종목 (중복 제거)
+    var displayStocks: [WatchedStock] {
+        let manualCodes = Set(watchedStocks.map(\.stock.code))
+        let portfolioStocks = balanceHoldings
+            .filter { !manualCodes.contains($0.code) }
+            .enumerated()
+            .map { index, holding in
+                WatchedStock(
+                    stock: StockInfo(code: holding.code, name: holding.name, market: ""),
+                    order: watchedStocks.count + index
+                )
+            }
+        return watchedStocks + portfolioStocks
+    }
+
+    func isPortfolioStock(code: String) -> Bool {
+        balanceHoldings.contains(where: { $0.code == code })
     }
 
     // MARK: - Helpers

@@ -8,16 +8,18 @@ struct StockGridView: View {
     var body: some View {
         VStack(spacing: 4) {
             LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(store.watchedStocks) { watched in
+                ForEach(store.displayStocks) { watched in
+                    let isPortfolio = store.isPortfolioStock(code: watched.stock.code)
                     StockTileView(
                         watched: watched,
                         quote: store.quotes[watched.stock.code],
-                        onRemove: { store.removeStock(code: watched.stock.code) },
-                        onUpdateLabel: { label in store.updateLabel(code: watched.stock.code, label: label) }
+                        onRemove: isPortfolio ? nil : { store.removeStock(code: watched.stock.code) },
+                        onUpdateLabel: isPortfolio ? nil : { label in store.updateLabel(code: watched.stock.code, label: label) }
                     )
                     .draggable(watched.stock.code)
                     .dropDestination(for: String.self) { codes, _ in
-                        guard let code = codes.first,
+                        guard !isPortfolio,
+                              let code = codes.first,
                               let from = store.watchedStocks.firstIndex(where: { $0.stock.code == code }),
                               let to = store.watchedStocks.firstIndex(where: { $0.stock.code == watched.stock.code }),
                               from != to

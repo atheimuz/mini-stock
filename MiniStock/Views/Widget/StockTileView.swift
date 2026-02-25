@@ -4,8 +4,8 @@ import SwiftUI
 struct StockTileView: View {
     let watched: WatchedStock
     let quote: StockQuote?
-    let onRemove: () -> Void
-    let onUpdateLabel: (String) -> Void
+    let onRemove: (() -> Void)?
+    let onUpdateLabel: ((String) -> Void)?
 
     @State private var isHovering = false
     @State private var showPopover = false
@@ -29,22 +29,24 @@ struct StockTileView: View {
                 .font(.tileLabel)
                 .foregroundStyle(tileTextColor)
 
-            ZStack {
-                AcceptFirstMouseButton(action: onRemove)
+            if let onRemove {
+                ZStack {
+                    AcceptFirstMouseButton(action: onRemove)
 
-                Image(systemName: "xmark")
-                    .font(.system(size: 5, weight: .bold))
-                    .foregroundStyle(Color.textSecondary)
-                    .frame(width: 10, height: 10)
-                    .background(Color.widgetBackground.opacity(0.8))
-                    .clipShape(Circle())
-                    .allowsHitTesting(false)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 5, weight: .bold))
+                        .foregroundStyle(Color.textSecondary)
+                        .frame(width: 10, height: 10)
+                        .background(Color.widgetBackground.opacity(0.8))
+                        .clipShape(Circle())
+                        .allowsHitTesting(false)
+                }
+                .frame(width: 10, height: 10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(1)
+                .opacity(isHovering ? 1 : 0)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: isHovering)
             }
-            .frame(width: 10, height: 10)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            .padding(1)
-            .opacity(isHovering ? 1 : 0)
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: isHovering)
         }
         .frame(width: 28, height: 28)
         .popover(isPresented: $showPopover, arrowEdge: .bottom) {
@@ -66,20 +68,24 @@ struct StockTileView: View {
             }
         }
         .contextMenu {
-            Button("Remove") { onRemove() }
-            Divider()
-            Button("Edit label...") {
-                let alert = NSAlert()
-                alert.messageText = "Edit label"
-                alert.informativeText = "Enter custom display text"
-                let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
-                input.stringValue = watched.stock.customLabel ?? ""
-                input.placeholderString = String(watched.stock.name.prefix(2))
-                alert.accessoryView = input
-                alert.addButton(withTitle: "OK")
-                alert.addButton(withTitle: "Cancel")
-                if alert.runModal() == .alertFirstButtonReturn {
-                    onUpdateLabel(input.stringValue)
+            if let onRemove {
+                Button("Remove") { onRemove() }
+                Divider()
+            }
+            if let onUpdateLabel {
+                Button("Edit label...") {
+                    let alert = NSAlert()
+                    alert.messageText = "Edit label"
+                    alert.informativeText = "Enter custom display text"
+                    let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+                    input.stringValue = watched.stock.customLabel ?? ""
+                    input.placeholderString = String(watched.stock.name.prefix(2))
+                    alert.accessoryView = input
+                    alert.addButton(withTitle: "OK")
+                    alert.addButton(withTitle: "Cancel")
+                    if alert.runModal() == .alertFirstButtonReturn {
+                        onUpdateLabel(input.stringValue)
+                    }
                 }
             }
         }
