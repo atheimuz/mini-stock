@@ -96,6 +96,11 @@ struct SettingsPanelView: View {
             Divider()
                 .background(Color.widgetBorder)
 
+            updateSection
+
+            Divider()
+                .background(Color.widgetBorder)
+
             HStack {
                 Spacer()
                 Button("Save") { saveCredentials() }
@@ -120,6 +125,101 @@ struct SettingsPanelView: View {
         .onAppear {
             appKey = KeychainService.load(key: .appKey) ?? ""
             appSecret = KeychainService.load(key: .appSecret) ?? ""
+        }
+    }
+
+    private var updater: AppUpdateService { AppUpdateService.shared }
+
+    private var updateSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("App Update")
+                .font(.popoverRate)
+                .foregroundStyle(Color.textSecondary)
+
+            HStack {
+                Text("v\(updater.currentVersion)")
+                    .font(.popoverLabel)
+                    .foregroundStyle(Color.textSecondary)
+
+                Spacer()
+
+                updateStatusView
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var updateStatusView: some View {
+        switch updater.status {
+        case .idle:
+            Button(action: { Task { await updater.checkForUpdate() } }) {
+                Text("Check for Updates")
+                    .font(.buttonFont)
+                    .foregroundStyle(Color.textPrimary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.tileFlatBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+
+        case .checking:
+            HStack(spacing: 4) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("확인 중...")
+                    .font(.hint)
+                    .foregroundStyle(Color.textSecondary)
+            }
+
+        case .upToDate:
+            Label("최신 버전", systemImage: "checkmark.circle.fill")
+                .font(.hint)
+                .foregroundStyle(Color.accentFall)
+
+        case .available(let version, let url):
+            Button(action: { Task { await updater.downloadAndInstall(url: url) } }) {
+                Text("v\(version) 업데이트")
+                    .font(.buttonFont)
+                    .foregroundStyle(Color.widgetBackground)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.tileRiseText)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+
+        case .downloading(let progress):
+            VStack(alignment: .trailing, spacing: 2) {
+                ProgressView(value: progress)
+                    .frame(width: 100)
+                Text("\(Int(progress * 100))%")
+                    .font(.hint)
+                    .foregroundStyle(Color.textSecondary)
+            }
+
+        case .installing:
+            HStack(spacing: 4) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("설치 중...")
+                    .font(.hint)
+                    .foregroundStyle(Color.textSecondary)
+            }
+
+        case .failed(let msg):
+            HStack(spacing: 6) {
+                Label("실패", systemImage: "xmark.circle.fill")
+                    .font(.hint)
+                    .foregroundStyle(Color.indicatorError)
+                    .help(msg)
+                Button(action: { Task { await updater.checkForUpdate() } }) {
+                    Text("재시도")
+                        .font(.hint)
+                        .foregroundStyle(Color.tileRiseText)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
